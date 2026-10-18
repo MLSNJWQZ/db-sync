@@ -74,6 +74,20 @@ echo "https://你的私有聚合站/" >> feeds.local.txt
 
 workflow 把它作为环境变量传给脚本，代码和日志里只显示 `[私有源#1]`，**地址不会出现在仓库和 Actions 日志中**。
 
+## 自动发现（GitHub 搜索）
+
+workflow 里设了 `DISCOVER=1`，脚本会自己搜 GitHub：
+
+1. 搜 4 组关键词（`tvbox` / `tvbox 接口` / `影视仓` / `tvbox 配置`），只取 **≥15 星、非 fork、近期有更新**的仓
+2. 每个仓：先读 README 扒里面的 `.json` 配置地址，再探测常见文件名（`tvbox.json` / `config.json` / `api.json` …）
+3. 这些地址和固定源一起进候选池实测
+
+不消耗 API 额度（只有搜索走 API，README 和文件探测都走 CDN 直连）。本地想试：
+
+```bash
+DISCOVER=1 python sync.py
+```
+
 ## 内置默认源
 
 | 源 | 说明 |

@@ -36,11 +36,121 @@ LOCAL_FEEDS = "feeds.local.txt"
 
 BAD_HOST = ("gh-proxy.com", "127.0.0.1", "localhost", "example.com")
 
+# ── 自动发现（环境变量 DISCOVER=1 才启用）─────────────────────────
+# 用 GitHub 搜索找「高星 + 近期活跃」的 TVBox / 影视仓 合集仓，
+# 再从仓库文件树里挑出像配置的文件（tvbox.json / api.json / config.json…）
+DISCOVER_QUERIES = [
+    "tvbox stars:>30 fork:false pushed:>2026-01-01",
+    "tvbox 接口 stars:>20 fork:false pushed:>2026-01-01",
+    "影视仓 stars:>20 fork:false pushed:>2026-01-01",
+    "tvbox 配置 stars:>15 fork:false pushed:>2026-01-01",
+]
+DISCOVER_SKIP = {"lubin776/tvbox-api-backup", "TVboxorg/TVbox"}
+CONFIG_NAME = re.compile(r"(tvbox|api|config|box|接口|配置|urls?|py|spider)", re.I)
+MAX_REPOS = 12
+MAX_FILES_PER_REPO = 2
+
 
 def opener():
-    return urllib.request.build_opener(
-        urllib.request.ProxyHandler({}), urllib.request.HTTPSHandler(context=CTX)
-    )
+    """SYNC_PROXY 可指定代理（本地/NAS 上用），不设则直连"""
+    px = os.environ.get("SYNC_PROXY")
+    handler = (urllib.request.ProxyHandler({"http": px, "https": px})
+               if px else urllib.request.ProxyHandler({}))
+    return urllib.request.build_opener(handler, urllib.request.HTTPSHandler(context=CTX))
+
+
+def gh_json(url, timeout=20):
+    """带 token（若有）的 GitHub API 请求"""
+    h = {"User-Agent": UA, "Accept": "application/vnd.github+json"}
+    tok = os.environ.get("GITHUB_TOKEN")
+    if tok:
+        h["Authorization"] = f"Bearer {tok}"
+    try:
+        return json.load(opener().open(urllib.request.Request(url, headers=h), timeout=timeout))
+    except Exception:
+        return None
+
+
+# 常见配置文件名（直接探测，不消耗 API 额度）
+COMMON_PATHS = [
+    "tvbox.json", "config.json", "api.json", "tv.json", "box.json",
+    "json/tvbox.json", "json/config.json", "dist/official.json", "urls.json",
+]
+README_NAMES = ["README.md", "readme.md", "README.MD"]
+
+
+def head_ok(url, timeout=10):
+    try:
+        req = urllib.request.Request(url, method="HEAD", headers={"User-Agent": UA})
+        return opener().open(req, timeout=timeout).status == 200
+    except Exception:
+        return False
+
+
+def readme_urls(full):
+    """从仓库 README 里扒出 .json 配置地址"""
+    for name in README_NAMES:
+        url = f"https://raw.githubusercontent.com/{full}/HEAD/{name}"
+        raw = fetch(url)
+        if not raw:
+            continue
+        text = raw.decode("utf-8", "replace")
+        found = []
+        for m in re.findall(r"https?://[^\s\"'<>\)\]，。]+?\.json", text):
+            if "raw.githubusercontent.com" in m or "jsdelivr" in m or "gitee" in m or "gitcode" in m:
+                found.append(m)
+        return found[:4]
+    return []
+
+
+def discover_feeds():
+    """搜索 GitHub 上活跃的 TVBox 合集仓，返回候选配置地址（不消耗 core API 额度）"""
+    if os.environ.get("DISCOVER") != "1":
+        return []
+
+    repos, seen = [], set()
+    for q in DISCOVER_QUERIES:
+        d = gh_json("https://api.github.com/search/repositories?per_page=8&sort=updated&q="
+                    + quote(q))
+        for it in (d or {}).get("items", []):
+            full = it["full_name"]
+            if full in seen or full in DISCOVER_SKIP or it.get("fork"):
+                continue
+            seen.add(full)
+            repos.append(full)
+        if len(repos) >= MAX_REPOS:
+            break
+    repos = repos[:MAX_REPOS]
+    print(f"  发现候选仓库 {len(repos)} 个")
+
+    out, seen_url = [], set()
+
+    def add(u):
+        u = u.replace("http://", "https://", 1) if u.startswith("http://") else u
+        if u not in seen_url:
+            seen_url.add(u)
+            out.append(u)
+
+    for full in repos:
+        picked = 0
+        # ① README 里直接写的配置地址
+        for u in readme_urls(full):
+            add(u)
+            picked += 1
+            if picked >= 3:
+                break
+        # ② 常见文件名探测
+        for p in COMMON_PATHS:
+            if picked >= 3:
+                break
+            u = f"https://raw.githubusercontent.com/{full}/HEAD/{p}"
+            if head_ok(u):
+                add(u)
+                picked += 1
+        if picked:
+            print(f"    {full:42s} +{picked}")
+    print(f"  自动发现配置 {len(out)} 个")
+    return out
 
 
 def feeds():
@@ -48,6 +158,7 @@ def feeds():
 
     公开：feeds.txt
     私有：feeds.local.txt（本地，gitignore）+ 环境变量 FEEDS_EXTRA（GitHub Secret）
+    自动发现：DISCOVER=1 时从 GitHub 搜索得到
     内置默认源：DEFAULT_FEEDS
     """
     out = []
@@ -69,6 +180,8 @@ def feeds():
     for l in re.split(r"[\s,;]+", os.environ.get("FEEDS_EXTRA", "")):
         add(l.strip(), True)
     for u in DEFAULT_FEEDS:
+        add(u, False)
+    for u in discover_feeds():
         add(u, False)
     return out
 

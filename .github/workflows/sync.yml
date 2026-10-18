@@ -29,6 +29,9 @@ jobs:
           # 私有源放仓库 Secret（Settings → Secrets and variables → Actions）
           # 变量名 FEEDS_EXTRA，值可以是多个地址，逗号或换行分隔。不填也能跑。
           FEEDS_EXTRA: ${{ secrets.FEEDS_EXTRA }}
+          # 1 = 自动搜索 GitHub 上活跃的 TVBox 合集仓（用内置 token，不消耗你的额度）
+          DISCOVER: "1"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python sync.py
 
       - name: 提交更新
