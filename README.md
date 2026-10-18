@@ -32,12 +32,15 @@ dongguaTV 支持 `REMOTE_DB_URL`，把本仓库的 `db.json` 地址填进去，5
 
 > 仓库必须是 **public**，jsDelivr 才能取到。
 
-### 2. 手动跑一次，把 db.json 拷到 NAS
+### 2. 手动跑一次，把 db.json 拷到 NAS 的路径里
 
 ```bash
+# ① 拿到 db.json：电脑上跑一次实测生成，或直接下载仓库里现成的
 python sync.py
-# 然后把 db.json 覆盖到 /vol1/1000/docker/ETV/db.json
-# docker compose -p ETV up -d --force-recreate
+# ② 把这个 db.json 文件拷进 NAS，覆盖到这个路径：
+#    /vol1/1000/docker/ETV/db.json
+# ③ 重建容器让它重新读取（必须 --force-recreate，restart 不生效）
+docker compose -p ETV up -d --force-recreate
 ```
 
 ### 3. 在 NAS 上定时跑（结果最准）
