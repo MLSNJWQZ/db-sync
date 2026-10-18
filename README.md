@@ -58,15 +58,21 @@ https://gcore.jsdelivr.net/gh/别人/仓库@main/config.json
 
 改完 `git push` 会自动触发一次同步（workflow 里配了 `paths: feeds.txt`）。
 
-### 私有源 —— `feeds.local.txt`
+### 私有源 —— `feeds.local.txt` / 仓库 Secret
 
-不想公开的地址（自建服务、内网地址等）写在这里，已被 `.gitignore` 排除，**不会进仓库**：
+不想公开的地址（自建服务、内网地址等）有两处可以放：
+
+**① 本地 / NAS 上跑**：写进 `feeds.local.txt`，已被 `.gitignore` 排除，不会进仓库。
 
 ```bash
 echo "https://你的私有聚合站/" >> feeds.local.txt
 ```
 
-只在**本地 / NAS 上**跑 `sync.py` 时生效；GitHub Actions 上没有这个文件，自然也不会用它。
+**② 让 GitHub Actions 也能用**：仓库 → Settings → Secrets and variables → Actions → New repository secret
+- Name: `FEEDS_EXTRA`
+- Secret: 你的地址（多个用逗号或换行分隔）
+
+workflow 把它作为环境变量传给脚本，代码和日志里只显示 `[私有源#1]`，**地址不会出现在仓库和 Actions 日志中**。
 
 ## 内置默认源
 

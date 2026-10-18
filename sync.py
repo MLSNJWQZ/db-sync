@@ -44,21 +44,32 @@ def opener():
 
 
 def feeds():
-    """feeds.txt（公开示例）+ feeds.local.txt（私有，gitignore）+ 内置默认源，去重保序"""
+    """返回 [(url, 是否私有), ...]
+
+    公开：feeds.txt
+    私有：feeds.local.txt（本地，gitignore）+ 环境变量 FEEDS_EXTRA（GitHub Secret）
+    内置默认源：DEFAULT_FEEDS
+    """
     out = []
+    seen = set()
+
+    def add(u, private):
+        if u.startswith("http") and u not in seen:
+            seen.add(u)
+            out.append((u, private))
+
     for fn in ("feeds.txt", LOCAL_FEEDS):
         if not os.path.exists(fn):
             continue
         try:
             for l in open(fn, encoding="utf-8"):
-                l = l.strip()
-                if l.startswith("http") and l not in out:
-                    out.append(l)
+                add(l.strip(), fn == LOCAL_FEEDS)
         except Exception:
             pass
+    for l in re.split(r"[\s,;]+", os.environ.get("FEEDS_EXTRA", "")):
+        add(l.strip(), True)
     for u in DEFAULT_FEEDS:
-        if u not in out:
-            out.append(u)
+        add(u, False)
     return out
 
 
@@ -68,7 +79,7 @@ def fetch(url):
             urllib.request.Request(url, headers={"User-Agent": UA}), timeout=TIMEOUT_FETCH
         ).read()
     except Exception as e:
-        print(f"  x {url[:74]} :: {type(e).__name__}")
+        print(f"    -> {type(e).__name__}")
         return None
 
 
@@ -123,7 +134,13 @@ def prettify(name, host):
 def main():
     print("=== 1. 抓取数据源 ===")
     pool = {}
-    for url in feeds():
+    priv_i = 0
+    for url, private in feeds():
+        label = None
+        if private:
+            priv_i += 1
+            label = f"[私有源#{priv_i}]"
+        print(f"  · {label or url[:74]}")
         raw = fetch(url)
         cfg = parse(raw) if raw else None
         got = 0
@@ -137,7 +154,7 @@ def main():
             if h and h not in pool:
                 pool[h] = (str(s.get("name") or h), api)
                 got += 1
-        print(f"  ok {url[:74]}  (+{got})")
+        print(f"    {'ok' if raw else 'fail'}  +{got}")
 
     # 保底：仓库里已有的
     try:
