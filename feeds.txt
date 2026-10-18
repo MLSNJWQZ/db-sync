@@ -1,0 +1,6 @@
+# 你自己的额外数据源（每行一个配置地址，# 开头是注释）
+# 这里的地址 + sync.py 里的 DEFAULT_FEEDS 会一起抓，自动去重。
+#
+# 示例：
+# https://tvbox.mlsnjwqzb.dpdns.org/
+# https://gcore.jsdelivr.net/gh/别人的用户名/仓库@main/xxx.json
