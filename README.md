@@ -25,7 +25,7 @@
 dongguaTV 支持 `REMOTE_DB_URL`，把本仓库的 `db.json` 地址填进去，5 分钟缓存，失败自动回退本地文件：
 
 ```yaml
-- REMOTE_DB_URL=https://gcore.jsdelivr.net/gh/你的用户名/你的仓库@main/db.json
+- REMOTE_DB_URL=https://gcore.jsdelivr.net/gh/MLSNJWQZ/db-sync@main/db.json
 ```
 
 之后 NAS 上的源列表跟着本仓库每天自动变，**不用再手动传文件、不用重启容器**。
@@ -36,15 +36,15 @@ dongguaTV 支持 `REMOTE_DB_URL`，把本仓库的 `db.json` 地址填进去，5
 
 ```bash
 python sync.py
-# 然后把 db.json 覆盖到 /vol1/1000/docker/etv/db.json
-# docker compose -p etv up -d --force-recreate
+# 然后把 db.json 覆盖到 /vol1/1000/docker/ETV/db.json
+# docker compose -p ETV up -d --force-recreate
 ```
 
 ### 3. 在 NAS 上定时跑（结果最准）
 
 ```bash
 # crontab -e，每天 11:00
-0 11 * * * cd /vol1/1000/docker/etv && /usr/bin/python3 sync.py && docker restart donggua-tv
+0 11 * * * cd /vol1/1000/docker/ETV && /usr/bin/python3 sync.py && docker restart donggua-tv
 ```
 
 ## 为什么建议在 NAS 上跑而不是只用 Actions
