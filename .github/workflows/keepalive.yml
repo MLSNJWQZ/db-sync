@@ -1,0 +1,40 @@
+name: keepalive
+
+# 防止 GitHub 因 60 天无提交而停用定时任务：
+# 每月 1 号做一次空提交，刷新「最近活跃」时间戳。
+# 另外如果配置了 KEEPALIVE_URL Secret，会顺带 ping 一下（可用于唤醒 NAS 上的服务）。
+
+on:
+  schedule:
+    - cron: "0 4 1 * *"      # 每月 1 号 04:00 UTC = 北京时间 12:00
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ping（可选）
+        env:
+          KEEPALIVE_URL: ${{ secrets.KEEPALIVE_URL }}
+        run: |
+          if [ -n "$KEEPALIVE_URL" ]; then
+            for u in $(echo "$KEEPALIVE_URL" | tr ',' ' '); do
+              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$u" || echo 000)
+              echo "ping $u -> $code"
+            done
+          else
+            echo "未配置 KEEPALIVE_URL，跳过 ping"
+          fi
+
+      - name: 空提交刷新活跃时间
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --allow-empty -m "chore: keepalive $(date -u +'%Y-%m-%d')"
+          git push

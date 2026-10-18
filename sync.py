@@ -187,17 +187,22 @@ def feeds():
 
 
 def fetch(url):
-    """抓取并做基础容错：gzip 自动解压 + 失败重试一次"""
+    """抓取并做基础容错：两次尝试分别请求 gzip / identity，自动解压"""
     last = None
-    for attempt in (1, 2):
+    for enc in ("gzip", "identity"):
         try:
             raw = opener().open(
-                urllib.request.Request(url, headers={"User-Agent": UA, "Accept-Encoding": "gzip"}),
+                urllib.request.Request(url, headers={"User-Agent": UA, "Accept-Encoding": enc}),
                 timeout=TIMEOUT_FETCH,
             ).read()
-            if raw[:2] == b"\x1f\x8b":          # gzip 魔数
-                import gzip as _gz
+            import gzip as _gz, zlib as _zl
+            if raw[:2] == b"\x1f\x8b":                      # gzip 魔数
                 raw = _gz.decompress(raw)
+            elif raw[:1] == b"\x78":                        # zlib/deflate 魔数
+                try:
+                    raw = _zl.decompress(raw)
+                except Exception:
+                    pass
             return raw
         except Exception as e:
             last = e
