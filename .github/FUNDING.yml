@@ -1,17 +1,12 @@
 # 仓库右上角的「Sponsor」按钮配置
 # 文档：https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
-#
-# 注意：GitHub Sponsors 个人账户目前不支持中国大陆，收款走 Stripe Connect。
-# 所以走 custom 自定义链接（爱发电 / 赞赏码页面 / Ko-fi / Buy Me a Coffee 都行）。
 
 # ── 自定义链接（最多 4 个）────────────────────────────
-# 把下面的示例换成你自己的地址，然后删掉行首的 # 号
-#
-# custom:
-#   - https://afdian.com/a/你的用户名
-#   - https://你的域名/donate
+custom:
+  - link: https://afdian.com/a/mlsnjwqz
+    label: 爱发电 · 请作者喝杯咖啡（金额自选）
 
-# ── GitHub Sponsors（仅在你已开通时启用）──────────────
+# ── GitHub Sponsors（个人账户不支持中国大陆，暂不启用）──
 # github: [你的GitHub用户名]
 
 # ── 其他平台（已开通才填，填用户名不要带 @）───────────
@@ -21,8 +16,3 @@
 # open_collective: 你的OpenCollective项目名
 # tidelift: npm/包名
 # liberapay: 你的Liberapay用户名
-
-# ── 说明 ────────────────────────────────────────────
-# 1. 只有 custom 至少填一条、或其他平台填了，按钮才会出现
-# 2. 改完提交到默认分支，最多等几分钟生效
-# 3. 仓库必须是 public
