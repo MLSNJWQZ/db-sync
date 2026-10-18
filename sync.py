@@ -11,7 +11,7 @@
 
 只输出 dongguaTV 认的字段：key / name / api
 """
-import json, os, re, ssl, sys, urllib.request
+import json, os, re, ssl, sys, time, urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import quote, urlsplit
 
@@ -74,13 +74,23 @@ def feeds():
 
 
 def fetch(url):
-    try:
-        return opener().open(
-            urllib.request.Request(url, headers={"User-Agent": UA}), timeout=TIMEOUT_FETCH
-        ).read()
-    except Exception as e:
-        print(f"    -> {type(e).__name__}")
-        return None
+    """抓取并做基础容错：gzip 自动解压 + 失败重试一次"""
+    last = None
+    for attempt in (1, 2):
+        try:
+            raw = opener().open(
+                urllib.request.Request(url, headers={"User-Agent": UA, "Accept-Encoding": "gzip"}),
+                timeout=TIMEOUT_FETCH,
+            ).read()
+            if raw[:2] == b"\x1f\x8b":          # gzip 魔数
+                import gzip as _gz
+                raw = _gz.decompress(raw)
+            return raw
+        except Exception as e:
+            last = e
+            time.sleep(2)
+    print(f"    -> {type(last).__name__}")
+    return None
 
 
 def parse(raw):
