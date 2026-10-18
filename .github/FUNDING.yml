@@ -1,10 +1,9 @@
 # 仓库右上角的「Sponsor」按钮配置
 # 文档：https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
 
-# ── 自定义链接（最多 4 个）────────────────────────────
+# ── 自定义链接（最多 4 个，只支持纯 URL 字符串）──────
 custom:
-  - link: https://afdian.com/a/mlsnjwqz
-    label: 爱发电 · 请作者喝杯咖啡（金额自选）
+  - https://afdian.com/a/mlsnjwqz
 
 # ── GitHub Sponsors（个人账户不支持中国大陆，暂不启用）──
 # github: [你的GitHub用户名]
