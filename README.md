@@ -8,6 +8,16 @@
 { "sites": [ { "key": "s1", "name": "量子资源", "api": "https://.../api.php/provide/vod" } ] }
 ```
 
+## ☕ 支持这个项目
+
+这份列表是我每天自动抓取、逐个实测维护的，服务器和带宽都是自费。如果它帮到了你，可以请我喝杯咖啡 —— **金额自选，不是包月，几块钱也是心意**：
+
+[![爱发电](https://img.shields.io/badge/%E7%88%B1%E5%8F%91%E7%94%B5-%E8%AF%B7%E6%88%91%E5%96%9D%E6%9D%AF%E5%92%96%E5%95%A1-946ce6?style=for-the-badge)](https://afdian.com/a/mlsnjwqz)
+
+👉 **https://afdian.com/a/mlsnjwqz**
+
+也欢迎点右上角的 **Sponsor** 按钮，或给仓库点个 **Star** —— 都是对持续维护的鼓励。
+
 ## 用法（三选一）
 
 ### 1. 让 NAS 自己拉（推荐，一劳永逸）
