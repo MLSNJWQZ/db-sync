@@ -2,7 +2,7 @@
 
 每天由 GitHub Actions 自动抓取公开 TVBox 配置 → 提取 Maccms 采集接口 → 逐个实测 → 只保留能用的，写进 `db.json`。
 
-产出直接给 [dongguaTV](https://github.com/ednovas/dongguaTV) 用，格式只有三个字段：
+  产出直接给 [ETV](https://github.com/ednovas/dongguaTV) 用，格式只有三个字段：
 
 ```json
 { "sites": [ { "key": "s1", "name": "量子资源", "api": "https://.../api.php/provide/vod" } ] }
