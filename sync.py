@@ -29,9 +29,10 @@ DEFAULT_FEEDS = [
     + quote("海量采集聚合接口.json"),
     # 跨源合并 + 探测可用线路
     "https://gcore.jsdelivr.net/gh/TVboxorg/TVbox@main/dist/official.json",
-    # 自建 TVBox Aggregator
-    "https://tvbox.mlsnjwqzb.dpdns.org/",
 ]
+
+# 私有源放在 feeds.local.txt（已 gitignore），不会进仓库
+LOCAL_FEEDS = "feeds.local.txt"
 
 BAD_HOST = ("gh-proxy.com", "127.0.0.1", "localhost", "example.com")
 
@@ -43,11 +44,13 @@ def opener():
 
 
 def feeds():
-    """feeds.txt 里的自定义源 + 内置默认源，去重保序（自定义优先）"""
+    """feeds.txt（公开示例）+ feeds.local.txt（私有，gitignore）+ 内置默认源，去重保序"""
     out = []
-    if os.path.exists("feeds.txt"):
+    for fn in ("feeds.txt", LOCAL_FEEDS):
+        if not os.path.exists(fn):
+            continue
         try:
-            for l in open("feeds.txt", encoding="utf-8"):
+            for l in open(fn, encoding="utf-8"):
                 l = l.strip()
                 if l.startswith("http") and l not in out:
                     out.append(l)

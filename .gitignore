@@ -1,3 +1,4 @@
 db.json.bak
 __pycache__/
 *.pyc
+feeds.local.txt

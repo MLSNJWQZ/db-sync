@@ -48,14 +48,25 @@ GitHub Actions 的机器在**海外**。海外能通的采集站，在国内可�
 
 ## 改数据源
 
-编辑 `feeds.txt`，每行一个配置地址（TVBox 单仓/多仓都行，多仓会自动递归展开一层）：
+### 公开源 —— `feeds.txt`
+
+每行一个配置地址（TVBox 单仓/多仓都行，多仓会自动递归展开一层），会提交进仓库：
 
 ```
-https://tvbox.mlsnjwqzb.dpdns.org/
 https://gcore.jsdelivr.net/gh/别人/仓库@main/config.json
 ```
 
 改完 `git push` 会自动触发一次同步（workflow 里配了 `paths: feeds.txt`）。
+
+### 私有源 —— `feeds.local.txt`
+
+不想公开的地址（自建服务、内网地址等）写在这里，已被 `.gitignore` 排除，**不会进仓库**：
+
+```bash
+echo "https://你的私有聚合站/" >> feeds.local.txt
+```
+
+只在**本地 / NAS 上**跑 `sync.py` 时生效；GitHub Actions 上没有这个文件，自然也不会用它。
 
 ## 内置默认源
 
@@ -63,7 +74,6 @@ https://gcore.jsdelivr.net/gh/别人/仓库@main/config.json
 |---|---|
 | `lubin776/tvbox-api-backup` | 每天抓 90+ 配置，专门提取 type 0/1 采集站 |
 | `TVboxorg/TVbox` | 跨源合并 + 探测可用线路 |
-| 自建 TVBox Aggregator | 1097 站点聚合 |
 
 ## 免责
 
