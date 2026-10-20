@@ -246,33 +246,33 @@
       "key": "s53"
     },
     {
-      "name": "金鹰点播",
-      "api": "https://jinyingzy.com/api.php/provide/vod",
-      "key": "s54"
-    },
-    {
       "name": "閃電资源",
       "api": "https://sdzyapi.com/api.php/provide/vod",
-      "key": "s55"
+      "key": "s54"
     },
     {
       "name": "非凡API",
       "api": "https://api.ffzyapi.com/api.php/provide/vod",
-      "key": "s56"
+      "key": "s55"
     },
     {
       "name": "非凡线路1",
       "api": "http://ffzy1.tv/api.php/provide/vod",
-      "key": "s57"
+      "key": "s56"
     },
     {
       "name": "非凡资源",
       "api": "http://ffzy5.tv/api.php/provide/vod",
-      "key": "s58"
+      "key": "s57"
     },
     {
       "name": "非凡采集",
       "api": "http://cj.ffzyapi.com/api.php/provide/vod",
+      "key": "s58"
+    },
+    {
+      "name": "魔都动漫",
+      "api": "https://caiji.moduapi.cc/api.php/provide/vod",
       "key": "s59"
     },
     {
@@ -281,24 +281,19 @@
       "key": "s6"
     },
     {
-      "name": "魔都动漫",
-      "api": "https://caiji.moduapi.cc/api.php/provide/vod",
-      "key": "s60"
-    },
-    {
       "name": "魔都资源",
       "api": "https://www.mdzyapi.com/api.php/provide/vod",
-      "key": "s61"
+      "key": "s60"
     },
     {
       "name": "鲸鱼资源",
       "api": "https://jyzyapi.com/provide/vod",
-      "key": "s62"
+      "key": "s61"
     },
     {
       "name": "鸡坤资源",
       "api": "https://jkunzyapi.com/api.php/provide/vod",
-      "key": "s63"
+      "key": "s62"
     },
     {
       "name": "•非凡",
