@@ -323,5 +323,37 @@ def main():
     return 0
 
 
+def write_lunatv():
+    """从 db.json 生成 LunaTV 订阅文件 lunatv.json（base58 编码）"""
+    import json, re, pathlib
+    ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+    def b58(b):
+        n = int.from_bytes(b, 'big'); s = ''
+        while n:
+            n, r = divmod(n, 58); s = ALPHABET[r] + s
+        for c in b:
+            if c: break
+            s = ALPHABET[0] + s
+        return s or ALPHABET[0]
+    db = json.load(open('db.json', encoding='utf-8'))
+    cfg = {"cache_time": 7200, "api_site": {}}
+    for i, s in enumerate(db.get('sites', [])):
+        api = re.sub(r'[?&](ac=list|ac=videolist)\b', '', (s.get('api') or '').strip()).rstrip('?&')
+        if not api.startswith('http'):
+            continue
+        key = s.get('key') or f's{i}'
+        if key in cfg['api_site']:
+            key += '_2'
+        cfg['api_site'][key] = {"api": api, "name": s.get('name', key), "detail": ""}
+    pathlib.Path('lunatv.json').write_text(
+        b58(json.dumps(cfg, ensure_ascii=False).encode('utf-8')), encoding='utf-8')
+    print(f"已写入 lunatv.json: {len(cfg['api_site'])} 个源")
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    rc = main()
+    try:
+        write_lunatv()
+    except Exception as e:
+        print("lunatv.json 生成失败:", e)
+    sys.exit(rc)
