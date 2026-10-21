@@ -1,0 +1,61 @@
+name: Guard - 巡检各仓库 Actions 存活
+
+on:
+  schedule:
+    # 每天 UTC 00:37 巡检一次（北京 08:37）
+    - cron: '37 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  patrol:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检查各仓库定时任务是否停摆
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          : > guard_report.txt
+          check() {
+            repo="$1"; wf="$2"; max_hours="$3"
+            last=$(gh api "repos/MLSNJWQZ/$repo/actions/runs?per_page=30" \
+              --jq "[.workflow_runs[] | select(.name==\"$wf\")][0].created_at" 2>/dev/null || echo "")
+            if [ -z "$last" ] || [ "$last" = "null" ]; then
+              echo "- \`$repo\`：找不到工作流「$wf」的任何运行记录" >> guard_report.txt
+              return
+            fi
+            last_ts=$(date -d "$last" +%s)
+            age=$(( ($(date +%s) - last_ts) / 3600 ))
+            if [ "$age" -gt "$max_hours" ]; then
+              echo "- \`$repo\`：工作流「$wf」已 $age 小时没运行（阈值 ${max_hours}h），疑似被 GitHub 停用" >> guard_report.txt
+            fi
+          }
+          check cf-speed-dns "dns_both_push" 9
+          check lxmusic "Auto Sync & Keep Alive" 30
+          check dongguaTV "Sync db.json (from db-sync)" 30
+          echo "--- 巡检结果 ---"
+          if [ -s guard_report.txt ]; then cat guard_report.txt; else echo "全部正常"; fi
+
+      - name: 异常时开 Issue 通知 / 恢复时关闭
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE="⚠️ 巡检告警：有仓库 Actions 停摆"
+          open_n=$(gh issue list -R MLSNJWQZ/db-sync --search "巡检告警 in:title state:open" --json number --jq '.[0].number' 2>/dev/null || true)
+          if [ -s guard_report.txt ]; then
+            body="自动巡检发现以下仓库定时任务停摆：$(cat guard_report.txt)
+
+**处理方法**：到对应仓库的 Actions 页面，点击绿色按钮「I understand my workflows, go ahead and re-enable them」即可恢复。修复后本 Issue 会自动关闭。"
+            if [ -n "$open_n" ]; then
+              gh issue comment "$open_n" -R MLSNJWQZ/db-sync --body "$body"
+            else
+              gh issue create -R MLSNJWQZ/db-sync --title "$TITLE" --body "$body"
+            fi
+          else
+            if [ -n "$open_n" ]; then
+              gh issue close "$open_n" -R MLSNJWQZ/db-sync -c "巡检恢复正常，自动关闭。"
+            fi
+            echo "无异常，无需处理"
+          fi
