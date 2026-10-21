@@ -1,4 +1,4 @@
-# ETV电影源列表（自动更新）
+# 源列表（自动更新）
 
 每天由 GitHub Actions 自动抓取公开 TVBox 配置 → 提取 Maccms 采集接口 → 逐个实测 → 只保留能用的，写进 `db.json`。
 
