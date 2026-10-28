@@ -1,8 +1,16 @@
-name: Guard - 巡检各仓库 Actions 存活
+name: Guard - 巡检定时任务存活（互锁）
+
+# 职责：盯住全仓库巡检器 repo-guard 自己别被静默停用，外加两条核心业务链双保险。
+# 全量巡检由 repo-guard 仓库的「Repo Guard - 全仓库巡检」负责（每 6 小时）。
+#
+# 互锁关系：
+#   repo-guard  →  巡检所有仓库（包括本仓库的 Guard）
+#   本 workflow →  巡检 repo-guard 是否还活着
+# 任一方被 GitHub 静默停用，另一方都能发现。
 
 on:
   schedule:
-    # 每天 UTC 00:37 巡检一次（北京 08:37）
+    # 每天 UTC 00:37（北京 08:37）
     - cron: '37 0 * * *'
   workflow_dispatch:
 
@@ -13,28 +21,42 @@ jobs:
   patrol:
     runs-on: ubuntu-latest
     steps:
-      - name: 检查各仓库定时任务是否停摆
+      - name: 检查定时任务是否停摆
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 必须用 PAT：GITHUB_TOKEN 只能读本仓库，看不到 repo-guard
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           : > guard_report.txt
+
+          # 先确认 token 能用，否则所有检查都会误报成「没有记录」
+          if ! gh api repos/MLSNJWQZ/db-sync --jq .name >/dev/null 2>&1; then
+            echo "- ⚠️ 无法访问 GitHub API，GH_PAT 可能已过期或被撤销" >> guard_report.txt
+            cat guard_report.txt
+            exit 0
+          fi
+
           check() {
             repo="$1"; wf="$2"; max_hours="$3"
-            last=$(gh api "repos/MLSNJWQZ/$repo/actions/runs?per_page=30" \
-              --jq "[.workflow_runs[] | select(.name==\"$wf\")][0].created_at" 2>/dev/null || echo "")
+            # 只认 schedule 触发：手动跑过不能代表定时任务健康
+            last=$(gh api "repos/MLSNJWQZ/$repo/actions/runs?per_page=40" \
+              --jq "[.workflow_runs[] | select(.name==\"$wf\" and .event==\"schedule\")][0].created_at" 2>/dev/null || echo "")
             if [ -z "$last" ] || [ "$last" = "null" ]; then
-              echo "- $repo：找不到工作流「$wf」的任何运行记录" >> guard_report.txt
+              echo "- $repo：工作流「$wf」最近 40 次运行中没有一次定时触发" >> guard_report.txt
               return
             fi
             last_ts=$(date -d "$last" +%s)
             age=$(( ($(date +%s) - last_ts) / 3600 ))
             if [ "$age" -gt "$max_hours" ]; then
-              echo "- $repo：工作流「$wf」已 $age 小时没运行（阈值 ${max_hours}h），疑似被 GitHub 停用" >> guard_report.txt
+              echo "- $repo：工作流「$wf」已 $age 小时没有定时触发（阈值 ${max_hours}h），疑似被 GitHub 停用" >> guard_report.txt
             fi
           }
-          check cf-speed-dns "dns_both_push" 9
+
+          # 主巡检器（每 6 小时跑一次，容忍 12h）
+          check repo-guard "Repo Guard - 全仓库巡检" 12
+          # 双保险：两条核心业务链
           check lxmusic "Auto Sync & Keep Alive" 30
           check dongguaTV "Sync db.json (from db-sync)" 30
+
           echo "--- 巡检结果 ---"
           if [ -s guard_report.txt ]; then cat guard_report.txt; else echo "全部正常"; fi
 
@@ -46,10 +68,12 @@ jobs:
           open_n=$(gh issue list -R MLSNJWQZ/db-sync --search "巡检告警 in:title state:open" --json number --jq '.[0].number' 2>/dev/null || true)
           if [ -s guard_report.txt ]; then
             {
-              echo "自动巡检发现以下仓库定时任务停摆："
+              echo "自动巡检发现以下问题："
               cat guard_report.txt
               echo ""
-              echo "处理方法：到对应仓库的 Actions 页面，点击绿色按钮「I understand my workflows, go ahead and re-enable them」即可恢复。修复后本 Issue 会自动关闭。"
+              echo "**处理方法**"
+              echo "- 定时任务停摆：到对应仓库 Actions 页面确认状态。GitHub 会静默停用 fork 仓库的 schedule，此时面板仍显示 active。"
+              echo "- 修复后本 Issue 会在下次巡检时自动关闭。"
             } > issue_body.md
             if [ -n "$open_n" ]; then
               gh issue comment "$open_n" -R MLSNJWQZ/db-sync --body-file issue_body.md
