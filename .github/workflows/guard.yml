@@ -40,10 +40,31 @@ jobs:
             # 只认 schedule 触发：手动跑过不能代表定时任务健康
             last=$(gh api "repos/MLSNJWQZ/$repo/actions/runs?per_page=40" \
               --jq "[.workflow_runs[] | select(.name==\"$wf\" and .event==\"schedule\")][0].created_at" 2>/dev/null || echo "")
+
             if [ -z "$last" ] || [ "$last" = "null" ]; then
-              echo "- $repo：工作流「$wf」最近 40 次运行中没有一次定时触发" >> guard_report.txt
+              # 没有任何定时触发记录，分三种情况处理
+              wf_created=$(gh api "repos/MLSNJWQZ/$repo/actions/workflows?per_page=100" \
+                --jq "[.workflows[] | select(.name==\"$wf\")][0].created_at // empty" 2>/dev/null || echo "")
+              any_last=$(gh api "repos/MLSNJWQZ/$repo/actions/runs?per_page=20" \
+                --jq "[.workflow_runs[] | select(.name==\"$wf\")][0].created_at // empty" 2>/dev/null || echo "")
+
+              if [ -n "$wf_created" ]; then
+                created_ts=$(date -d "$wf_created" +%s)
+                age_days=$(( ($(date +%s) - created_ts) / 86400 ))
+                if [ "$age_days" -lt 2 ]; then
+                  echo "· $repo / $wf：$age_days 天前新建，还没轮到定时触发（宽限期跳过）"
+                  return
+                fi
+              fi
+
+              if [ -n "$any_last" ]; then
+                echo "- $repo：工作流「$wf」有运行记录但全都不是定时触发（只有手动/推送）→ 定时任务已失效" >> guard_report.txt
+              else
+                echo "- $repo：工作流「$wf」找不到任何运行记录（配置了定时器却从未跑过）" >> guard_report.txt
+              fi
               return
             fi
+
             last_ts=$(date -d "$last" +%s)
             age=$(( ($(date +%s) - last_ts) / 3600 ))
             if [ "$age" -gt "$max_hours" ]; then
