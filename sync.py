@@ -5,8 +5,9 @@
 也可以在 NAS / 本机手动跑：python sync.py
 
 数据源优先级：
+  0. SEED_SITES 兜底源池（写死的稳定站，优先入池，同名域名不被覆盖）
   1. feeds.txt 里每行一个配置地址（自己维护，留空则只用内置默认源）
-  2. 内置默认源（几个长期维护的自动抓取仓库）
+  2. 内置默认源（几个长期维护的自动抓取仓库 + E视界官方站点表）
   3. 仓库里已通过的 db.json（保底，不会因为某天网络抖动把源全清空）
 
 只输出 dongguaTV 认的字段：key / name / api
@@ -29,6 +30,23 @@ DEFAULT_FEEDS = [
     + quote("海量采集聚合接口.json"),
     # 跨源合并 + 探测可用线路
     "https://gcore.jsdelivr.net/gh/TVboxorg/TVbox@main/dist/official.json",
+    # E视界(dongguaTV) 官方后端公开的采集站列表，格式 {"sites":[{name,api,active}]}
+    # 没有 type 字段，靠 parse 后放宽的 type 判断吃进来
+    "https://ednovas.video/api/sites",
+]
+
+# 兜底源池：写死在这里，feed 挂了 / 接口改版也不会丢。
+# 只放「实测长期稳定 + 别处抓不到」的站，正常抓取能覆盖的不要塞。
+SEED_SITES = [
+    ("芒果资源",    "https://caiji.mgzyapi.com/api.php/provide/vod"),
+    ("西瓜资源",    "https://caiji.xgzyapi.com/api.php/provide/vod"),
+    ("360资源ZZ",   "https://360zyzz.com/api.php/provide/vod"),
+    ("百度资源",    "https://api.apibdzy.com/api.php/provide/vod"),
+    ("优质YZ",      "https://api.yzzy-api.com/inc/apijson.php"),
+    ("OK资源",      "https://api.okzyw.net/api.php/provide/vod"),
+    ("艾旦影视",    "https://lovedan.net/api.php/provide/vod"),
+    ("量子资源2",   "https://cj.lzcaiji.com/api.php/provide/vod"),
+    ("魔都资源2",   "https://www.moduzy.com/api.php/provide/vod"),
 ]
 
 # 私有源放在 feeds.local.txt（已 gitignore），不会进仓库
@@ -263,6 +281,14 @@ def main():
     print("=== 1. 抓取数据源 ===")
     pool = {}
     priv_i = 0
+
+    # 兜底源池先入池，后面的 feed 遇到同域名不会覆盖它
+    for name, api in SEED_SITES:
+        h = host_of(api)
+        if h and h not in pool:
+            pool[h] = (name, api)
+    print(f"  兜底源池 {len(pool)} 条")
+
     for url, private in feeds():
         label = None
         if private:
@@ -273,7 +299,13 @@ def main():
         cfg = parse(raw) if raw else None
         got = 0
         for s in (cfg or {}).get("sites", []):
-            if not isinstance(s, dict) or s.get("type") not in (0, 1):
+            if not isinstance(s, dict):
+                continue
+            # 多数 TVBox 配置用 type 0/1 标记采集站；
+            # E视界那类站点表没有 type 字段，缺省时按采集站处理
+            if "type" in s and s["type"] not in (0, 1):
+                continue
+            if s.get("active") is False:
                 continue
             api = str(s.get("api") or "").strip()
             if not api.startswith("http") or api.endswith((".py", ".js", ".txt")):
