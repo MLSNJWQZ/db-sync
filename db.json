@@ -346,19 +346,24 @@
       "key": "s71"
     },
     {
+      "name": "魔都影视",
+      "api": "https://www.mdzyapi.com/api.php/provide/vod",
+      "key": "s72"
+    },
+    {
       "name": "魔都资源2",
       "api": "https://www.moduzy.com/api.php/provide/vod",
-      "key": "s72"
+      "key": "s73"
     },
     {
       "name": "鸡坤",
       "api": "https://jkunzyapi.com/api.php/provide/vod",
-      "key": "s73"
+      "key": "s74"
     },
     {
       "name": "鸭鸭资源",
       "api": "https://cj.yayazy.net/api.php/provide/vod",
-      "key": "s74"
+      "key": "s75"
     },
     {
       "name": "ikun",
