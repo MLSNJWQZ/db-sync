@@ -426,18 +426,18 @@
       "key": "s86"
     },
     {
-      "name": "非凡2",
-      "api": "https://cj.ffzyapi.com/api.php/provide/vod",
-      "key": "s87"
-    },
-    {
       "name": "非凡影视",
       "api": "https://api.ffzyapi.com/api.php/provide/vod",
-      "key": "s88"
+      "key": "s87"
     },
     {
       "name": "非凡资源",
       "api": "http://ffzy1.tv/api.php/provide/vod",
+      "key": "s88"
+    },
+    {
+      "name": "非凡采集",
+      "api": "http://cj.ffzyapi.com/api.php/provide/vod",
       "key": "s89"
     },
     {
